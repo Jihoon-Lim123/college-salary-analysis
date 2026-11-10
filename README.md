@@ -1,79 +1,50 @@
 # U.S. College Salary Analysis — Region × School Type
 
-**Python · pandas · NumPy · Matplotlib · scikit-learn · Linear Regression**
+**Python · pandas · NumPy · Matplotlib · scikit-learn · Linear Regression · Ridge**
 
-A statistical exploration of how starting salary, geographic region, and institution type relate to **mid-career salary** outcomes at U.S. colleges. This notebook introduces a **region-adjusted salary uplift** measure and fits a linear model with **Region × School Type interactions**.
+This notebook explores historical U.S. college-level starting and mid-career salary summaries from the **Wall Street Journal / PayScale** data. It compares college salaries with regional averages and evaluates whether region and school type improve *out-of-sample* predictions of mid-career median salaries.
 
-## Questions explored
+## What the project does
 
-- Which colleges have mid-career salaries above their own region's average?
-- How do starting salaries vary by region and school type?
-- Does combining starting salary with regional and school-type information help explain mid-career salary variation?
+- Loads the original school-type and region CSVs (local files first, otherwise an attributed public mirror).
+- Cleans column names, salary strings (e.g., `"$50,000"`), and missing data.
+- Joins school-type summaries to region labels and computes historical region-adjusted salary **uplift**.
+- Visualizes the top 10 school uplifts, region × school-type starting salaries, and uplift distribution.
+- Compares a **starting-salary baseline** against a **Ridge regression with region, school type, and Region × Type interaction**.
+- Reports **train R², 25% held-out test R² and test MAE**, plus 5-fold cross-validation on training data only. All preprocessing occurs inside scikit-learn Pipelines and is fitted only on training folds.
 
-## Data and workflow
+## Quick start
 
-The notebook expects two source datasets:
-- `salaries-by-college-type.csv` — college-level pay data with school type
-- `salaries-by-region.csv` — college-level pay data with geographic region
-
-It normalizes field names, parses salary values, joins schools across datasets, computes region-specific average salaries, and compares schools using:
-
-```text
-Mid-career uplift = School mid-career median salary − Region average mid-career median salary
+```bash
+git clone https://github.com/Jihoon-Lim123/college-salary-analysis.git
+cd college-salary-analysis
+python -m pip install -r requirements.txt
+jupyter notebook college_salary_final_project.ipynb
 ```
 
-The notebook then produces descriptive summaries, a top-10 uplift chart, region-by-school-type grouped means, a salary correlation matrix, a linear regression with interaction terms, and an uplift distribution plot.
+Select **Run All**. If the CSVs are not present beside the notebook, `pandas.read_csv` downloads them from the public dataset mirror below (internet required). Alternatively download both files manually and put them next to the notebook.
 
-## Selected results
+- [salaries-by-college-type.csv](https://github.com/UBC-MDS-2018-19/DSCI_522_Salary-vs-College/blob/master/data/raw_data/salaries-by-college-type.csv)
+- [salaries-by-region.csv](https://github.com/UBC-MDS-2018-19/DSCI_522_Salary-vs-College/blob/master/data/raw_data/salaries-by-region.csv)
 
-Figures below are **recorded notebook outputs**, not a new independent validation.
-
-| Metric | Saved result |
-| --- | ---: |
-| Colleges with starting and mid-career salary summaries | 269 |
-| Mean starting median salary | $46,068 |
-| Mean mid-career median salary | $83,932 |
-| Starting-to-mid-career salary correlation | **0.89** |
-| Region + School Type interaction model | **R² = 0.871** (n = 268) |
-
-The positive correlation suggests that schools with higher starting median salaries also tended to report higher mid-career medians in this dataset. The interaction model describes **in-sample fit**, not out-of-sample prediction performance. It does **not** establish a causal effect of school type or region.
+Data attribution: historical **Wall Street Journal / PayScale** college-salary data, mirrored by [UBC-MDS-2018-19](https://github.com/UBC-MDS-2018-19/DSCI_522_Salary-vs-College). **Exact snapshot year is not established.** Check usage and redistribution rights before republishing the original datasets; this repository fetches them rather than bundling copies.
 
 ## Files
 
-- [`college_salary_final_project.ipynb`](college_salary_final_project.ipynb) — analysis code, saved outputs, and visualizations
-- [`README.md`](README.md) — overview, findings, and caveats
+- `college_salary_final_project.ipynb`: cleaning, descriptive summaries, visualizations, modeling, evaluation
+- `requirements.txt`: Python dependencies
+- `.gitignore`: ignores caches and generated `outputs/`
+- `outputs/college_salary_master_with_regionavg.csv`: generated after running; not committed
 
-## Running the notebook
+## Findings and validation
 
-**Important: this repository is not yet reproducible as a fresh clone.**
+The old `R² = 0.871` reported in the original notebook was **in-sample**, not evidence of predictive generalization. It has been removed from the headline claims. Run the revised notebook to see baseline vs interaction-model performance on held-out schools. The refactored notebook intentionally has **no cached results** and has **not yet been independently re-executed on the source CSVs**.
 
-1. Install Python 3 and Jupyter with `pandas`, `numpy`, `matplotlib`, and `scikit-learn`.
-2. Obtain the two source CSVs listed above and place them in the notebook's working directory (they are **not** included in this repository).
-3. Before running the notebook's “Setup & Data Load” cell, load the two tables into `df_type_raw` and `df_region_raw`. The current saved notebook uses those DataFrames before defining them. One way to supply the missing initialization is:
+## Interpretation limits
 
-   ```python
-   df_type_raw = pd.read_csv("salaries-by-college-type.csv")
-   df_region_raw = pd.read_csv("salaries-by-region.csv")
-   ```
+- Historical, **school-level** summary values do not predict a particular person's salary.
+- Associations among school type, region, and salary are **not causal**. Confounding factors include major, student selection, cohort, industry, and experience.
+- Region lookups depend on exact school-name matches. Some schools might have no matching region and will be excluded from predictive modeling.
+- A small held-out sample produces uncertain performance estimates; this is a learning portfolio project, not a deployed predictive service.
 
-   These lines must be added **after importing pandas** and **before** the first use of either variable.
-4. Restart the kernel and run the remaining cells in order after correcting initialization. Notebook outputs document a previous successful analysis session, but a clean, independent run has not been verified.
-
-## Methodological caveats
-
-- Salary summaries are at the **college level**, not individual graduate records.
-- Missing major, cohort, industry, cost-of-living, and labor-market variables limit interpretation.
-- Regional baselines depend on the available schools in the source tables and the way the datasets were merged.
-- R² is calculated **in sample**; no held-out predictive evaluation is documented.
-- The original data sources, precise snapshot date, and reproducibility setup should be documented before treating this as a production-quality research artifact.
-
-## Planned improvements
-
-- Add source CSVs where redistribution is permitted, with dataset provenance and dates.
-- Repair the data-loading cell and verify a clean restart-and-run.
-- Export key figures into the README and add out-of-sample evaluation.
-- Explain how missing regional matches and incomplete rows affect the reported model sample.
-
-## Author
-
-**Jihoon Lim** — undergraduate Data Science / Mathematics project.
+**Author:** Jihoon Lim. Original student project, subsequently revised for reproducibility and better out-of-sample evaluation.
