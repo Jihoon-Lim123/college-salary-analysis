@@ -36,9 +36,20 @@ Data attribution: historical **Wall Street Journal / PayScale** college-salary d
 - `.gitignore`: ignores caches and generated `outputs/`
 - `outputs/college_salary_master_with_regionavg.csv`: generated after running; not committed
 
-## Findings and validation
+## Verified modeling results
 
-The old `R² = 0.871` reported in the original notebook was **in-sample**, not evidence of predictive generalization. It has been removed from the headline claims. Run the revised notebook to see baseline vs interaction-model performance on held-out schools. The refactored notebook intentionally has **no cached results** and has **not yet been independently re-executed on the source CSVs**.
+The notebook was **successfully executed end to end on GitHub Actions** with a fresh Python 3.11 environment and the historical CSV source data. The run used 268 complete school records, with 201 schools for training and 67 held out for testing (`random_state=42`).
+
+| Model | Training R² | Held-out test R² | Held-out test MAE |
+| --- | ---: | ---: | ---: |
+| Starting salary only (Linear Regression) | 0.78 | 0.84 | $4,322 |
+| Starting salary + Region × School Type (Ridge) | 0.87 | **0.85** | $4,366 |
+
+The Ridge model achieves slightly higher held-out R² but **worse MAE** than the simpler model. The results do not demonstrate a clear practical advantage from adding region and school type. Training-only 5-fold CV for the Ridge model produced R² **0.839 ± 0.036**. All figures are rounded to the precision shown in the verified execution.
+
+The previously quoted **R² = 0.871 was an in-sample score** and should not be described as predictive performance. The revised notebook intentionally has no cached outputs, so reviewers can reproduce the numbers by running **Run All**; the [successful notebook execution and downloadable executed notebook](https://github.com/Jihoon-Lim123/college-salary-analysis/actions/runs/42769639061) are also available from GitHub Actions (artifact retention: 7 days).
+
+The reported metrics depend on one randomized hold-out split. They describe a small **historical college-level dataset**, not a causal effect or present-day individual salary predictions.
 
 ## Interpretation limits
 
