@@ -1,0 +1,67 @@
+name: Validate salary analysis notebook
+
+on:
+  push:
+    branches:
+      - "fix/reproducible-salary-analysis-20261110"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  execute-notebook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt nbconvert nbclient ipykernel
+      - name: Execute notebook from clean kernel
+        run: |
+          jupyter nbconvert --to notebook --execute college_salary_final_project.ipynb --output executed_salary_analysis.ipynb --ExecutePreprocessor.timeout=180 --ExecutePreprocessor.kernel_name=python3
+      - name: Print model metrics from executed notebook
+        if: success()
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+          nb = json.loads(Path("executed_salary_analysis.ipynb").read_text())
+          for cell in nb["cells"]:
+              if cell["cell_type"] != "code":
+                  continue
+              source = "".join(cell.get("source", []))
+              if "Held-out evaluation" not in source:
+                  continue
+              for output in cell.get("outputs", []):
+                  s = output.get("text", "")
+                  if isinstance(s, list):
+                      s = "".join(s)
+                  if s:
+                      print(s)
+                  data = output.get("data", {})
+                  plain = data.get("text/plain", "")
+                  if isinstance(plain, list):
+                      plain = "".join(plain)
+                  if plain:
+                      print(plain)
+              break
+          else:
+              raise SystemExit("No model-metrics cell found")
+          PY
+      - name: Upload executed notebook
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed-salary-analysis
+          path: executed_salary_analysis.ipynb
+          retention-days: 7
